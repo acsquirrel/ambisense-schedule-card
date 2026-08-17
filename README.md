@@ -4,6 +4,8 @@ A touch-friendly Home Assistant card for viewing and editing weekly heating sche
 
 The card shows all seven days as colored timelines and provides a responsive editor for switching times and temperature setpoints. On tablets and desktop screens, overview and editor are displayed side by side.
 
+![AmbiSense Schedule Card showing the weekly overview and day editor](images/Card_Screenshot.png)
+
 ## Features
 
 - seven-day timeline with temperature colors and visible segment boundaries
