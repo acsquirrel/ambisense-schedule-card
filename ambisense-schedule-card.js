@@ -1,4 +1,8 @@
-const AMBISENSE_SCHEDULE_CARD_VERSION = "0.3.0";
+const AMBISENSE_SCHEDULE_CARD_VERSION = "0.3.1";
+
+const TIME_STEP_MINUTES = 10;
+const TIME_STEP_SECONDS = TIME_STEP_MINUTES * 60;
+const LAST_SWITCHING_TIME = 24 * 60 - TIME_STEP_MINUTES;
 
 const WEEKDAY_KEYS = [
   "monday",
@@ -34,6 +38,7 @@ const TRANSLATIONS = {
     minimumEntry: "{day}: Mindestens ein Zeitpunkt ist erforderlich.",
     firstAtMidnight: "{day}: Der erste Zeitpunkt muss 00:00 sein.",
     invalidTime: "{day}: Ungültige Uhrzeit.",
+    invalidTimeStep: "{day}: Die Uhrzeit muss in 10-Minuten-Schritten liegen.",
     duplicateTime: "{day}: Eine Uhrzeit kommt doppelt vor.",
     temperatureOutOfRange: "{day}: Temperatur außerhalb des erlaubten Bereichs.",
     saveSuccess: "Zeitplan wurde gespeichert. Die Aktualisierung kann einen Moment dauern.",
@@ -76,6 +81,7 @@ const TRANSLATIONS = {
     minimumEntry: "{day}: At least one switching point is required.",
     firstAtMidnight: "{day}: The first switching point must be at 00:00.",
     invalidTime: "{day}: Invalid time.",
+    invalidTimeStep: "{day}: Time must use 10-minute increments.",
     duplicateTime: "{day}: A time occurs more than once.",
     temperatureOutOfRange: "{day}: Temperature is outside the allowed range.",
     saveSuccess: "Schedule saved. The update may take a moment.",
@@ -248,7 +254,7 @@ class AmbisenseScheduleCard extends HTMLElement {
     if (!match) return null;
     const hours = Number(match[1]);
     const minutes = Number(match[2]);
-    if (hours > 23 || minutes > 59) return null;
+    if (hours > 23 || minutes > 59 || minutes % TIME_STEP_MINUTES !== 0) return null;
     return hours * 60 + minutes;
   }
 
@@ -329,7 +335,7 @@ class AmbisenseScheduleCard extends HTMLElement {
           <div class="entry-row" data-index="${index}">
             <label>
               <span>${this._escape(this._t("time"))}</span>
-              <input class="time-input" type="time" value="${this._formatTime(entry.start_time)}" step="60">
+              <input class="time-input" type="time" value="${this._formatTime(entry.start_time)}" min="00:00" max="23:50" step="${TIME_STEP_SECONDS}">
             </label>
             <label>
               <span>${this._escape(this._t("temperature"))}</span>
@@ -497,7 +503,12 @@ class AmbisenseScheduleCard extends HTMLElement {
       const index = Number(row.dataset.index);
       row.querySelector(".time-input").addEventListener("change", (event) => {
         const minutes = this._parseTime(event.target.value);
-        if (minutes === null) return;
+        if (minutes === null) {
+          event.target.value = this._formatTime(
+            this._draft[this._selectedDay][index].start_time,
+          );
+          return;
+        }
         this._draft[this._selectedDay][index].start_time = minutes;
         this._draft[this._selectedDay].sort((a, b) => a.start_time - b.start_time);
         this._markDirty();
@@ -518,9 +529,16 @@ class AmbisenseScheduleCard extends HTMLElement {
     this.shadowRoot.querySelector(".add-entry")?.addEventListener("click", () => {
       const entries = this._draft[this._selectedDay];
       const previous = entries.at(-1);
-      let start = previous ? previous.start_time + 60 : 0;
-      start = Math.min(start, 1439);
-      while (entries.some((entry) => entry.start_time === start) && start > 0) start -= 1;
+      const occupied = new Set(entries.map((entry) => entry.start_time));
+      let start = Math.min(
+        previous ? previous.start_time + 60 : 0,
+        LAST_SWITCHING_TIME,
+      );
+      start = Math.ceil(start / TIME_STEP_MINUTES) * TIME_STEP_MINUTES;
+      while (occupied.has(start) && start >= TIME_STEP_MINUTES) {
+        start -= TIME_STEP_MINUTES;
+      }
+      if (occupied.has(start)) return;
       entries.push({
         start_time: start,
         temperature_setpoint: previous?.temperature_setpoint ?? 20,
@@ -580,6 +598,9 @@ class AmbisenseScheduleCard extends HTMLElement {
       for (const entry of entries) {
         if (entry.start_time < 0 || entry.start_time > 1439) {
           return this._t("invalidTime", { day: label });
+        }
+        if (entry.start_time % TIME_STEP_MINUTES !== 0) {
+          return this._t("invalidTimeStep", { day: label });
         }
         if (seen.has(entry.start_time)) {
           return this._t("duplicateTime", { day: label });

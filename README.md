@@ -10,7 +10,7 @@ The card shows all seven days as colored timelines and provides a responsive edi
 
 - seven-day timeline with temperature colors and visible segment boundaries
 - responsive two-column layout for tablets and desktops
-- add, edit, and remove switching points
+- add, edit, and remove switching points in 10-minute increments
 - copy one day to weekdays, weekends, or the full week
 - writes the complete schedule through `mypyllant.set_time_program`
 - follows the Home Assistant language automatically
@@ -22,18 +22,20 @@ The configured myPyllant climate entity must expose its AmbiSense schedule as a 
 
 The myPyllant integration must also provide the `mypyllant.set_time_program` action.
 
-## Installation with HACS
+## Installation with the Home Assistant Marketplace
 
-1. Open HACS.
-2. Add `https://github.com/acsquirrel/ambisense-schedule-card` as a custom **Dashboard** repository.
-3. Download **AmbiSense Schedule Card**.
+1. Open **Settings → Marketplace**.
+2. Select **Add from link** and enter `https://github.com/acsquirrel/ambisense-schedule-card`.
+3. Install **AmbiSense Schedule Card** as a Dashboard repository.
 4. Reload the Home Assistant frontend when prompted.
+
+On Home Assistant versions before 2026.11, add the same URL to HACS as a custom **Dashboard** repository instead.
 
 ## Manual installation
 
 1. Copy `ambisense-schedule-card.js` to `/config/www/ambisense-schedule-card.js`.
 2. Open **Settings → Dashboards → Resources** in Home Assistant.
-3. Add `/local/ambisense-schedule-card.js?v=0.3.0` as a JavaScript module.
+3. Add `/local/ambisense-schedule-card.js?v=0.3.1` as a JavaScript module.
 4. Fully reload the browser or Home Assistant Companion app.
 
 ## Card configuration
@@ -88,6 +90,7 @@ full_width_on_mobile: true
 
 - Saving always submits the complete weekly schedule.
 - Every day must start with a switching point at `00:00`.
+- Switching points can only be set in 10-minute increments.
 - Changes stay local to the card until **Save schedule** is pressed.
 - The card maps `temperature_setpoint` from the entity attribute to `setpoint` when saving.
 
@@ -96,6 +99,7 @@ full_width_on_mobile: true
 Die Karte übernimmt standardmäßig die in Home Assistant eingestellte Sprache. Deutsch und Englisch sind direkt enthalten; mit `language: de` kann Deutsch ausdrücklich erzwungen werden.
 
 Beim Speichern wird immer der vollständige Wochenplan übertragen. Der erste Schaltpunkt jedes Tages muss bei `00:00` liegen.
+Umschaltpunkte können nur in 10-Minuten-Schritten eingestellt werden.
 
 ## License
 
